@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\SmsApiService;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -91,6 +92,22 @@ class SmsProxyTest extends TestCase
             ->assertJson([
                              'code' => 'error',
                              'message' => 'Number not found. Try again',
+                         ]);
+    }
+
+    public function test_controller_handles_service_exception_gracefully(): void
+    {
+        $this->mock(SmsApiService::class)
+             ->shouldReceive('proxyRequest')
+             ->andThrow(new \App\Exceptions\SmsApiException('Service Unavailable', 503));
+
+        $response = $this->getJson('/api/v1/sms/getNumber?country=se');
+
+        $response
+            ->assertStatus(503)
+            ->assertJson([
+                             'code' => 'error',
+                             'message' => 'Service Unavailable',
                          ]);
     }
 }
